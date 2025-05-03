@@ -3,10 +3,12 @@
 require_once 'ParfumeService.php';
 require_once 'UserService.php';
 require_once 'AuthService.php';
+require_once 'ReviewService.php';
 
 $parfumeService = new ParfumeService();
 $userService = new UserService();
 $authService = new AuthService();
+$reviewService = new ReviewService();
 
 
 
@@ -68,6 +70,12 @@ print_r($fragrances);*/
 
 
 //USER SERVICE TEST
+
+/*echo "Fetching all users:\n";
+
+$users = $userService->getAll();
+
+print_r($users);*/
 
 
 /*echo "Viewing user:\n";
@@ -149,3 +157,69 @@ try {
 } catch (Exception $e) {
     echo "Exception: " . $e->getMessage() . "\n";
 }*/
+
+/*echo "getting review";
+
+try {
+    $reviewId = 1; // Change this to an existing review ID in your DB
+    $review = $reviewService->getReviewById($reviewId);
+    echo "Review found:\n";
+    print_r($review);
+} catch (Exception $e) {
+    echo "Error: " . $e->getMessage() . "\n";
+}*/
+
+
+/*echo "creating review"
+
+$reviewData = [
+    'user_id' => 8,  // Example valid user ID
+    'parfume_id' => 3,  // Example valid fragrance ID
+    'rating' => 5,  // Rating from 1 to 5
+    'comment' => 'Amazing fragrance!',  // Optional comment
+];
+
+// Try to create the review
+try {
+    echo $reviewService->createReview($reviewData);
+    echo "\nReview created successfully!";
+} catch (Exception $e) {
+    echo "Error: " . $e->getMessage();
+}*/
+
+
+
+/*echo "updating parfume";
+
+$reviewData = [
+    'user_id' => 8,  // Example valid user ID
+    'parfume_id' => 2,  // Example valid fragrance ID
+    'rating' => 4,  // New rating from 1 to 5
+    'comment' => 'Great fragrance, but needs more lasting power.',  // Updated comment
+];
+
+// Review ID to update
+$reviewId = 1;  // Assuming review ID 1 exists
+
+// Try to update the review
+try {
+    $result = $reviewService->updateReview($reviewId, $reviewData);
+    echo "Review updated successfully!";
+    print_r($result);  // Optionally print the updated review details
+} catch (Exception $e) {
+    echo "Error: " . $e->getMessage();
+}*/
+
+
+/*echo "Deleting the parfume:\n";
+
+$reviewIdToDelete = 2;
+$reviewService->deleteReview($reviewIdToDelete);
+echo "review deleted succesfully.";*/
+
+
+/*echo "Fetching all reviews:\n";
+
+$reviews = $reviewService->getAll();
+
+print_r($reviews);*/

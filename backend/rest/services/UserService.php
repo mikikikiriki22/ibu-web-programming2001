@@ -14,7 +14,15 @@ class UserService extends BaseService
         parent::__construct($dao);     //calling constructor of parent class from child class so that we make sure $dao is initialized properly and that the core logic can be implemented
     }
 
-    //admin side of viewing users
+
+    //admin side of viewing all users
+
+    public function getAllUsers() {
+        return $this->dao->getAll(); 
+    }
+
+
+    //admin side of viewing certain user
 
     public function getUserById($id)
     {
@@ -45,6 +53,10 @@ class UserService extends BaseService
         $user = $this->dao->getById($id);
         if (!$user) {
             throw new Exception("User not found.");
+        }
+
+        if (!empty($userData['password'])) {
+            $userData['password'] = password_hash($userData['password'], PASSWORD_BCRYPT);
         }
 
         return $this->dao->update($id, $userData);
