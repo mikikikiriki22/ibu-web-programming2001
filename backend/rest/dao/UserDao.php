@@ -11,7 +11,7 @@ class UserDao extends BaseDao
     public function getByEmail($email)
     {
         $stmt = $this->connection->prepare("SELECT * FROM users WHERE email = :email");
-        $stmt->bindParam(' :email', $email);
+        $stmt->bindParam(':email', $email);
         $stmt->execute();
         return $stmt->fetch();
     }
