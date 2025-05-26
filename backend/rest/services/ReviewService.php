@@ -6,22 +6,23 @@ class ReviewService extends BaseService
 {
     public function __construct()
     {
-        $this->dao = new ReviewDao();
-        parent::__construct($this->dao);
+        $dao = new ReviewDao();
+        parent::__construct($dao);
     }
 
 
-    public function getAllReviews()
+    /*public function getAllReviews()
     {
 
         return $this->dao->getAll();   //gets all fragrances from database
 
-    }
+    }*/
+    //not needed
 
     //GET REVIEW
     public function getReviewById($id)
     {
-        $review = $this->dao->getById($id);
+        $review = $this->getById($id);
 
         if (!$review) {
             throw new Exception("Review not found.");
@@ -38,32 +39,32 @@ class ReviewService extends BaseService
             throw new Exception("Missing required fields: user_id, fragrance_id, or rating.");
         }
 
-        return parent::create($reviewData);
+        return $this->create($reviewData);
     }
 
 
     //UPDATING REVIEW
     public function updateReview($id, $data)
     {
-        $review = $this->dao->getById($id);
+        $review = $this->getById($id);
 
         if (!$review) {
             throw new Exception("Review not found.");
         }
 
-        return $this->dao->update($id, $data);
+        return $this->update($id, $data);
     }
 
 
     //DELETING REVIEW
     public function deleteReview($id)
     {
-        $review = $this->dao->getById($id);
+        $review = $this->getById($id);
 
         if (!$review) {
             throw new Exception("Review not found.");
         }
 
-        return $this->dao->delete($id);
+        return $this->delete($id);
     }
 }

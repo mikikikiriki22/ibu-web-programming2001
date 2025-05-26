@@ -17,16 +17,17 @@ class UserService extends BaseService
 
     //admin side of viewing all users
 
-    public function getAllUsers() {
+    /*public function getAllUsers() {
         return $this->dao->getAll(); 
-    }
+    }*/
+    //not really needed
 
 
     //admin side of viewing certain user
 
     public function getUserById($id)
     {
-        $user = $this->dao->getById($id);    //gets certain user by id
+        $user = $this->getById($id);    //gets certain user by id
         if (!$user) {
             throw new Exception("User not found.");
         }
@@ -37,12 +38,12 @@ class UserService extends BaseService
 
     public function deleteUser($id)
     {
-        $user = $this->dao->getById($id);
+        $user = $this->getById($id);
         if (!$user) {
             throw new Exception("User not found.");
         }
 
-        return $this->dao->delete($id);
+        return $this->delete($id);
     }
 
     //user side of editing profile
@@ -50,7 +51,7 @@ class UserService extends BaseService
     public function updateUser($id, $userData)
     {
 
-        $user = $this->dao->getById($id);
+        $user = $this->getById($id);
         if (!$user) {
             throw new Exception("User not found.");
         }
@@ -59,6 +60,6 @@ class UserService extends BaseService
             $userData['password'] = password_hash($userData['password'], PASSWORD_BCRYPT);
         }
 
-        return $this->dao->update($id, $userData);
+        return $this->update($id, $userData);
     }
 }

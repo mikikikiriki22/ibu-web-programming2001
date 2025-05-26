@@ -11,7 +11,7 @@ class BrandDao extends BaseDao
     public function getById($id)
     {
         $stmt = $this->connection->prepare("SELECT * FROM brands WHERE id = :id");
-        $stmt->bindParam(' :id', $id);
+        $stmt->bindParam(':id', $id);
         $stmt->execute();
         return $stmt->fetch();
     }
