@@ -1,18 +1,12 @@
 <?php
 
+require_once __DIR__ . '/../services/ParfumeService.php';
 
-require_once __DIR__ . "/../services/ParfumeService.php";
-
-
-// making parfume service class accesible
+// Make parfume service accessible via Flight
 Flight::register('parfumeService', 'ParfumeService');
 
-
-
-//GET ALL FRAGRANCES
-
+// GET ALL FRAGRANCES
 /**
- * 
  * @OA\Get(
  *     path="/parfumes",
  *     tags={"Fragrances"},
@@ -23,16 +17,14 @@ Flight::register('parfumeService', 'ParfumeService');
  *     )
  * )
  */
-
 Flight::route('GET /parfumes', function () {
+    Flight::auth_middleware()->authorizeRoles([Roles::ADMIN, Roles::USER]);
+
     $data = Flight::parfumeService()->getAllFragrances();
     Flight::json($data);
 });
 
-
-
-//GET FRAGRANCE BY ID
-
+// GET FRAGRANCE BY ID
 /**
  * @OA\Get(
  *     path="/parfumes/{id}",
@@ -54,10 +46,10 @@ Flight::route('GET /parfumes', function () {
  *     )
  * )
  */
-
 Flight::route('GET /parfumes/@id', function ($id) {
-    $fragrance = Flight::parfumeService()->getFragranceById($id);
+    Flight::auth_middleware()->authorizeRoles([Roles::ADMIN, Roles::USER]);
 
+    $fragrance = Flight::parfumeService()->getFragranceById($id);
     if ($fragrance) {
         Flight::json($fragrance);
     } else {
@@ -65,10 +57,7 @@ Flight::route('GET /parfumes/@id', function ($id) {
     }
 });
 
-
-
-//ADDING FRAGRANCE
-
+// CREATE FRAGRANCE
 /**
  * @OA\Post(
  *     path="/parfumes",
@@ -93,27 +82,15 @@ Flight::route('GET /parfumes/@id', function ($id) {
  *     )
  * )
  */
-
 Flight::route('POST /parfumes', function () {
-    // get all the data the user sent in the body
+    Flight::auth_middleware()->authorizeRole(Roles::ADMIN);
+
     $data = Flight::request()->data->getData();
-
-    // call the service to add the fragrance
-    $fragranceService = new ParfumeService();
-    $result = $fragranceService->addFragrance($data);
-
-    // give response based on the result
-    if ($result) {
-        Flight::json(['message' => 'Fragrance added successfully'], 201);
-    } else {
-        Flight::json(['message' => 'Failed to add fragrance'], 500);
-    }
+    $result = Flight::parfumeService()->addFragrance($data);
+    Flight::json($result, 201);
 });
 
-
-
-//UPDATING FRAGRANCE
-
+// UPDATE FRAGRANCE
 /**
  * @OA\Put(
  *     path="/parfumes/{id}",
@@ -134,7 +111,7 @@ Flight::route('POST /parfumes', function () {
  *         )
  *     ),
  *     @OA\Response(
- *         response=201,
+ *         response=200,
  *         description="Fragrance updated successfully"
  *     ),
  *     @OA\Response(
@@ -143,27 +120,15 @@ Flight::route('POST /parfumes', function () {
  *     )
  * )
  */
-
 Flight::route('PUT /parfumes/@id', function ($id) {
-    // get all the data the user sent in the body
+    Flight::auth_middleware()->authorizeRole(Roles::ADMIN);
+
     $data = Flight::request()->data->getData();
-
-    // call the service to add the fragrance
-    $fragranceService = new ParfumeService();
-    $result = $fragranceService->updateFragrance($id, $data);
-
-    // give response based on the result
-    if ($result) {
-        Flight::json(['message' => 'Fragrance updated successfully'], 201);
-    } else {
-        Flight::json(['message' => 'Failed to update fragrance'], 500);
-    }
+    $updated = Flight::parfumeService()->updateFragrance($id, $data);
+    Flight::json(['message' => 'Fragrance updated successfully', 'fragrance' => $updated]);
 });
 
-
-
-//DELETING FRAGRANCE
-
+// DELETE FRAGRANCE
 /**
  * @OA\Delete(
  *     path="/parfumes/{id}",
@@ -185,12 +150,9 @@ Flight::route('PUT /parfumes/@id', function ($id) {
  *     )
  * )
  */
-
 Flight::route('DELETE /parfumes/@id', function ($id) {
-    try {
-        Flight::parfumeService()->deleteFragrance($id);
-        Flight::json(['message' => 'Fragrance deleted successfully']);
-    } catch (Exception $e) {
-        Flight::json(['error' => $e->getMessage()], 404);
-    }
+    Flight::auth_middleware()->authorizeRole(Roles::ADMIN);
+
+    Flight::parfumeService()->deleteFragrance($id);
+    Flight::json(['message' => 'Fragrance deleted successfully']);
 });

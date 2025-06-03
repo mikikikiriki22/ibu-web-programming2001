@@ -2,13 +2,10 @@
 
 require_once __DIR__ . "/../services/UserService.php";
 
-
-// making parfume service class accesible
+// Make user service accessible via Flight
 Flight::register('userService', 'UserService');
 
-
-//GET ALL USERS
-
+// GET ALL USERS
 /**
  * @OA\Get(
  *     path="/users",
@@ -17,14 +14,14 @@ Flight::register('userService', 'UserService');
  *     @OA\Response(response=200, description="List of all users")
  * )
  */
-
 Flight::route('GET /users', function () {
+    Flight::auth_middleware()->authorizeRole(Roles::ADMIN);
+
     $data = Flight::userService()->getAllUsers();
     Flight::json($data);
 });
 
-//GET USER BY ID
-
+// GET USER BY ID
 /**
  * @OA\Get(
  *     path="/users/{id}",
@@ -40,19 +37,18 @@ Flight::route('GET /users', function () {
  *     @OA\Response(response=404, description="User not found")
  * )
  */
-
 Flight::route('GET /users/@id', function ($id) {
-    $user = Flight::userService()->getUserById($id);
+    Flight::auth_middleware()->authorizeRoles([Roles::ADMIN, Roles::USER]);
 
+    $user = Flight::userService()->getUserById($id);
     if ($user) {
         Flight::json($user);
     } else {
-        Flight::json(["error" => "Fragrance not found"], 404);
+        Flight::json(["error" => "User not found"], 404);
     }
 });
 
-//EDITING USER PROFILE
-
+// UPDATE USER
 /**
  * @OA\Put(
  *     path="/users/{id}",
@@ -72,29 +68,19 @@ Flight::route('GET /users/@id', function ($id) {
  *             @OA\Property(property="password", type="string")
  *         )
  *     ),
- *     @OA\Response(response=201, description="User profile updated successfully"),
+ *     @OA\Response(response=200, description="User profile updated successfully"),
  *     @OA\Response(response=500, description="Failed to update user profile")
  * )
  */
-
 Flight::route('PUT /users/@id', function ($id) {
-    // get all the data the user sent in the body
+    Flight::auth_middleware()->authorizeRoles([Roles::ADMIN, Roles::USER]);
+
     $data = Flight::request()->data->getData();
-
-    // call the service to update user
-    $userService = new UserService();
-    $result = $userService->updateUser($id, $data);
-
-    // give response based on the result
-    if ($result) {
-        Flight::json(['message' => 'User profile updated successfully'], 201);
-    } else {
-        Flight::json(['message' => 'Failed to update user profile'], 500);
-    }
+    $updated = Flight::userService()->updateUser($id, $data);
+    Flight::json(['message' => 'User profile updated successfully', 'user' => $updated]);
 });
 
-//DELETING USER
-
+// DELETE USER
 /**
  * @OA\Delete(
  *     path="/users/{id}",
@@ -110,8 +96,9 @@ Flight::route('PUT /users/@id', function ($id) {
  *     @OA\Response(response=404, description="User not found")
  * )
  */
-
 Flight::route('DELETE /users/@id', function ($id) {
+    Flight::auth_middleware()->authorizeRole(Roles::ADMIN);
+
     try {
         Flight::userService()->deleteUser($id);
         Flight::json(['message' => 'User deleted successfully']);
