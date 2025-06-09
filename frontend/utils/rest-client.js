@@ -4,11 +4,11 @@ let RestClient = {
         url: Constants.PROJECT_BASE_URL.replace(/\/+$/, "") + "/" + url.replace(/^\/+/, ""),
         type: "GET",
         beforeSend: function (xhr) {
-          xhr.setRequestHeader(
-            "Authentication",
-            localStorage.getItem("user_token")
-          );
-        },
+        const token = localStorage.getItem("user_token");
+        if (token) {
+          xhr.setRequestHeader("Authentication", token);
+        }
+      },
         success: function (response) {
           if (callback) callback(response);
         },

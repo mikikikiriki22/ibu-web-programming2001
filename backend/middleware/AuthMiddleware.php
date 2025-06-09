@@ -1,10 +1,13 @@
 <?php
+
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
-class AuthMiddleware {
+class AuthMiddleware
+{
 
-    public function verifyToken($token) {
+    public function verifyToken($token)
+    {
         if (!$token)
             Flight::halt(401, "Missing authentication header");
 
@@ -23,7 +26,8 @@ class AuthMiddleware {
         return TRUE;
     }
 
-    public function authorizeRole($requiredRole) {
+    public function authorizeRole($requiredRole)
+    {
         $user = Flight::get('user');
         if (!isset($user->role)) {
             Flight::halt(403, 'Access denied: role not found in token');
@@ -33,9 +37,11 @@ class AuthMiddleware {
         }
     }
 
-    public function authorizeRoles($roles) {
+    public function authorizeRoles($roles)
+    {
         $user = Flight::get('user');
-        if (!isset($user->role)) {
+
+        if (!isset($user["role"])) {
             Flight::halt(403, 'Access denied: role not found');
         }
         if (!in_array($user->role, $roles)) {
@@ -43,7 +49,8 @@ class AuthMiddleware {
         }
     }
 
-    public function authorizePermission($permission) {
+    public function authorizePermission($permission)
+    {
         $user = Flight::get('user');
         if (!isset($user->permissions) || !is_array($user->permissions)) {
             Flight::halt(403, 'Forbidden: permissions missing');

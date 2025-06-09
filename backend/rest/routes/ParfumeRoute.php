@@ -1,6 +1,8 @@
 <?php
 
 require_once __DIR__ . '/../services/ParfumeService.php';
+require_once __DIR__ . '/../../data/roles.php';
+
 
 // Make parfume service accessible via Flight
 Flight::register('parfumeService', 'ParfumeService');
@@ -46,6 +48,7 @@ Flight::route('GET /parfumes', function () {
  * )
  */
 Flight::route('GET /parfumes/@id', function ($id) {
+
     Flight::auth_middleware()->authorizeRoles([Roles::ADMIN, Roles::USER]);
 
     $fragrance = Flight::parfumeService()->getFragranceById($id);
