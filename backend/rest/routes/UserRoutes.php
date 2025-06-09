@@ -75,10 +75,18 @@ Flight::route('GET /users/@id', function ($id) {
 Flight::route('PUT /users/@id', function ($id) {
     Flight::auth_middleware()->authorizeRoles([Roles::ADMIN, Roles::USER]);
 
+    $loggedInUser = Flight::get('user');
+
+    if ($loggedInUser->role !== Roles::ADMIN && $loggedInUser->id != $id) {
+        Flight::halt(403, "Forbidden: You can only update your own profile.");
+    }
+
     $data = Flight::request()->data->getData();
-    $updated = Flight::userService()->updateUser($id, $data);
-    Flight::json(['message' => 'User profile updated successfully', 'user' => $updated]);
+    $updatedUser = Flight::userService()->updateUser($id, $data);
+
+    Flight::json($updatedUser);
 });
+
 
 // DELETE USER
 /**

@@ -53,13 +53,12 @@ class AuthService extends BaseService
 
     unset($user['password']);
 
-    $role = ($user['username'] === "admin") ? "admin" : "user";
+    $user['role'] = ($user['username'] === "admin") ? "admin" : "user";
 
     $jwt_payload = [
         'user' => $user,
-        'role' => $role,
         'iat' => time(),
-        'exp' => time() + (60 * 60 * 24) // valid for 1 day
+        'exp' => time() + (60 * 60 * 24)
     ];
 
     $token = JWT::encode($jwt_payload, Config::JWT_SECRET(), 'HS256');

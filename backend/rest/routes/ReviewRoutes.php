@@ -67,12 +67,18 @@ Flight::route('GET /reviews/@id', function ($id) {
  * )
  */
 Flight::route('POST /reviews', function () {
-    Flight::auth_middleware()->authorizeRole(Roles::USER);
+    Flight::auth_middleware()->authorizeRoles([Roles::USER]);
 
+    $loggedInUser = Flight::get('user');
     $data = Flight::request()->data->getData();
-    $review = Flight::reviewService()->createReview($data);
-    Flight::json($review, 201);
+
+    // force logged-in user's ID
+    $data['user_id'] = $loggedInUser->id;
+
+    $review = Flight::reviewService()->addReview($data);
+    Flight::json($review);
 });
+
 
 // UPDATE REVIEW
 /**
@@ -98,11 +104,23 @@ Flight::route('POST /reviews', function () {
  * )
  */
 Flight::route('PUT /reviews/@id', function ($id) {
-    Flight::auth_middleware()->authorizeRole(Roles::USER);
+    Flight::auth_middleware()->authorizeRoles([Roles::ADMIN, Roles::USER]);
+
+    $loggedInUser = Flight::get('user');
+    $existingReview = Flight::reviewService()->getReviewById($id);
+
+    if (!$existingReview) {
+        Flight::json(["error" => "Review not found"], 404);
+        return;
+    }
+
+    if ($loggedInUser->role !== Roles::ADMIN && $existingReview['user_id'] != $loggedInUser->id) {
+        Flight::halt(403, "Forbidden: You can only update your own review.");
+    }
 
     $data = Flight::request()->data->getData();
-    $updated = Flight::reviewService()->updateReview($id, $data);
-    Flight::json(['message' => 'Review updated successfully', 'review' => $updated]);
+    $updatedReview = Flight::reviewService()->updateReview($id, $data);
+    Flight::json($updatedReview);
 });
 
 // DELETE REVIEW

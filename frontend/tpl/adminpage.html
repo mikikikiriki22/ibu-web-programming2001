@@ -291,13 +291,17 @@
     }
 
     const token = localStorage.getItem('user_token');
-    if (!token) {
-        window.location.href = '/login.html';
+    const user = JSON.parse(localStorage.getItem('user'));
+
+    if (!token || !user) {
+        alert("Access denied. You are not logged in.");
+        window.location.href = '/';
     } else {
         const decoded = parseJwt(token);
-        if (!decoded || decoded.role !== 'admin') {
-            window.location.href = '/unauthorized.html'; 
+        if (!decoded || !decoded.user || decoded.user.role !== 'admin') {
+            alert("Access denied. Admins only.");
+            window.location.href = '/';
         }
-
     }
 </script>
+

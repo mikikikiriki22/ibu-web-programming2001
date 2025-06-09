@@ -18,7 +18,6 @@ Flight::register('parfumeService', 'ParfumeService');
  * )
  */
 Flight::route('GET /parfumes', function () {
-    Flight::auth_middleware()->authorizeRoles([Roles::ADMIN, Roles::USER]);
 
     $data = Flight::parfumeService()->getAllFragrances();
     Flight::json($data);

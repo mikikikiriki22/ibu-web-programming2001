@@ -51,7 +51,8 @@
     RestClient.post("/auth/login", { email, password },
       function (data) { 
         console.log("Success:", data);
-        localStorage.setItem("user_token", data.data.token)
+        localStorage.setItem("user_token", data.data.token);
+        localStorage.setItem("user", JSON.stringify(data.data));
         window.location.hash = "#homepage";
       },
       function (error) {

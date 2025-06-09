@@ -18,7 +18,8 @@ error_reporting(E_ALL);
 Flight::route('/*', function() {
    if(
        strpos(Flight::request()->url, '/auth/login') === 0 ||
-       strpos(Flight::request()->url, '/auth/register') === 0
+       strpos(Flight::request()->url, '/auth/register') === 0 ||
+       strpos(Flight::request()->url, '/parfumes') === 0
    ) {
        return TRUE;
    } else {
