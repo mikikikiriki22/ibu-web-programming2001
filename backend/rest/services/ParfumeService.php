@@ -19,11 +19,11 @@ class ParfumeService extends BaseService
 
         return $this->dao->getAll();   //gets all fragrances from database
 
-    }
+    }   //NO NEED FOR THIS, SINCE WE ARE INHERITING GET ALL FROM BASE
 
     public function getFragranceById($id)
     {
-        $fragrance = $this->dao->getById($id);    //gets certain frag by id
+        $fragrance = $this->getById($id);    //gets certain frag by id
         if (!$fragrance) {
             throw new Exception("Fragrance not found.");
         }
@@ -37,29 +37,29 @@ class ParfumeService extends BaseService
             throw new Exception("Fragrance name and brand are required.");
         }
 
-        return $this->dao->insert($fragranceData);     //adding frags
+        return $this->create($fragranceData);     //adding frags
     }
 
     public function updateFragrance($id, $fragranceData)
     {
 
-        $fragrance = $this->dao->getById($id);
+        $fragrance = $this->getById($id);
         if (!$fragrance) {
             throw new Exception("Fragrance not found.");
         }
 
-        return $this->dao->update($id, $fragranceData);    //updating frags
+        return $this->update($id, $fragranceData);    //updating frags
     }
 
     public function deleteFragrance($id)
     {
 
-        $fragrance = $this->dao->getById($id);
+        $fragrance = $this->getById($id);
         if (!$fragrance) {
             throw new Exception("Fragrance not found.");
         }
 
-        return $this->dao->delete($id);     //deleting frags
+        return $this->delete($id);     //deleting frags
 
     }
 }

@@ -17,7 +17,7 @@
                 <label class="form-label" for="typePasswordX-2">Password</label>
               </div>
   
-              <button data-mdb-button-init data-mdb-ripple-init class="btn btn-primary btn-lg btn-block" type="submit">Login</button>
+              <button id="loginBtn" data-mdb-button-init data-mdb-ripple-init class="btn btn-primary btn-lg btn-block" type="submit">Login</button>
 
               <div class="mt-3">
               <a>Don't have an account?</a>
@@ -30,3 +30,32 @@
       </div>
     </div>
   </section>
+
+  <script>
+  // RestClient.post("/auth/register", {username, email, password}, function(data){}, function(error){})
+
+  document.getElementById("loginBtn").addEventListener("click", function () {
+    // Get values from input fields
+    const email = document.getElementById("typeEmailX-2").value.trim();
+    const password = document.getElementById("typePasswordX-2").value.trim();
+
+    if (!email || !password) {
+      alert("Please fill in all fields.");
+      return;
+    }
+
+    // Send data only when button is clicked
+    RestClient.post("/auth/login", { email, password },
+      function (data) { 
+        console.log("Success:", data);
+        localStorage.setItem("user_token", data.data.token);
+        localStorage.setItem("user", JSON.stringify(data.data));
+        window.location.hash = "#homepage";
+      },
+      function (error) {
+        console.log("Error:", error);
+        alert("Login failed.");
+      }
+    );
+  });
+</script>
