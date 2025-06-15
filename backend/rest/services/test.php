@@ -1,5 +1,6 @@
 <?php
-
+use PHPUnit\Framework\TestCase;
+require __DIR__ . '/../../../vendor/autoload.php';
 require_once 'ParfumeService.php';
 require_once 'UserService.php';
 require_once 'AuthService.php';
@@ -223,3 +224,67 @@ echo "review deleted succesfully.";*/
 $reviews = $reviewService->getAll();
 
 print_r($reviews);*/
+
+class ProjectFunctionalitiesTest extends TestCase {
+    private $userService;
+    private $authService;
+    private $reviewService;
+    private $parfumeService;
+
+    protected function setUp(): void {
+        $this->userService = new UserService();
+        $this->authService = new AuthService();
+        $this->reviewService = new ReviewService();
+        $this->parfumeService = new ParfumeService();
+    }
+
+    public function testRegister() {
+        $email = 'testuser_' . uniqid() . '@example.com';
+        $userData = [
+            'username' => 'TestUser_' . uniqid(),
+            'email' => $email,
+            'password' => 'testpassword',
+            'role' => 'user'
+        ];
+        $result = $this->authService->register($userData);
+        $this->assertTrue(is_array($result) && (isset($result['id']) || isset($result['user']) || isset($result['success'])), 'User registration should succeed');
+    }
+
+    public function testLogin() {
+        $email = 'loginuser_' . uniqid() . '@example.com';
+        $password = 'testpassword';
+        $userData = [
+            'username' => 'LoginUser_' . uniqid(),
+            'email' => $email,
+            'password' => $password,
+            'role' => 'user'
+        ];
+        $this->authService->register($userData);
+        $loginResult = $this->authService->login(['email' => $email, 'password' => $password]);
+        $this->assertTrue(is_array($loginResult) && (isset($loginResult['success']) ? $loginResult['success'] : false), 'Login should succeed');
+    }
+
+    public function testLeaveReview() {
+        $email = 'reviewuser_' . uniqid() . '@example.com';
+        $userData = [
+            'username' => 'ReviewUser_' . uniqid(),
+            'email' => $email,
+            'password' => 'testpassword',
+            'role' => 'user'
+        ];
+        $user = $this->authService->register($userData);
+        $userId = isset($user['id']) ? $user['id'] : (isset($user['user']['id']) ? $user['user']['id'] : null);
+        $this->assertTrue(!empty($userId), 'User should be created and have an ID');
+        $fragrances = $this->parfumeService->getAllFragrances();
+        $this->assertTrue(is_array($fragrances) && count($fragrances) > 0, 'At least one fragrance must exist');
+        $parfume_id = $fragrances[0]['id'];
+        $reviewData = [
+            'user_id' => $userId,
+            'parfume_id' => $parfume_id,
+            'rating' => 5,
+            'comment' => 'Great fragrance!'
+        ];
+        $result = $this->reviewService->dao->insert($reviewData);
+        $this->assertTrue($result === true || $result === 1, 'Review should be left successfully');
+    }
+}

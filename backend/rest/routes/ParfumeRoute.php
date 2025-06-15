@@ -2,6 +2,7 @@
 
 
 require_once __DIR__ . "/../services/ParfumeService.php";
+require_once __DIR__ . '/../../data/roles.php';
 
 
 // making parfume service class accesible
@@ -95,18 +96,17 @@ Flight::route('GET /parfumes/@id', function ($id) {
  */
 
 Flight::route('POST /parfumes', function () {
-    // get all the data the user sent in the body
-    $data = Flight::request()->data->getData();
-
-    // call the service to add the fragrance
-    $fragranceService = new ParfumeService();
-    $result = $fragranceService->addFragrance($data);
-
-    // give response based on the result
-    if ($result) {
-        Flight::json(['message' => 'Fragrance added successfully'], 201);
-    } else {
-        Flight::json(['message' => 'Failed to add fragrance'], 500);
+    try {
+        $data = Flight::request()->data->getData();
+        $fragranceService = new ParfumeService();
+        $result = $fragranceService->addFragrance($data);
+        if ($result) {
+            Flight::json(['message' => 'Fragrance added successfully'], 201);
+        } else {
+            Flight::json(['message' => 'Failed to add fragrance'], 500);
+        }
+    } catch (Exception $e) {
+        Flight::json(['error' => $e->getMessage()], 500);
     }
 });
 
@@ -145,18 +145,17 @@ Flight::route('POST /parfumes', function () {
  */
 
 Flight::route('PUT /parfumes/@id', function ($id) {
-    // get all the data the user sent in the body
-    $data = Flight::request()->data->getData();
-
-    // call the service to add the fragrance
-    $fragranceService = new ParfumeService();
-    $result = $fragranceService->updateFragrance($id, $data);
-
-    // give response based on the result
-    if ($result) {
-        Flight::json(['message' => 'Fragrance updated successfully'], 201);
-    } else {
-        Flight::json(['message' => 'Failed to update fragrance'], 500);
+    try {
+        $data = Flight::request()->data->getData();
+        $fragranceService = new ParfumeService();
+        $result = $fragranceService->updateFragrance($id, $data);
+        if ($result) {
+            Flight::json(['message' => 'Fragrance updated successfully'], 201);
+        } else {
+            Flight::json(['message' => 'Failed to update fragrance'], 500);
+        }
+    } catch (Exception $e) {
+        Flight::json(['error' => $e->getMessage()], 500);
     }
 });
 
@@ -193,4 +192,98 @@ Flight::route('DELETE /parfumes/@id', function ($id) {
     } catch (Exception $e) {
         Flight::json(['error' => $e->getMessage()], 404);
     }
+});
+
+Flight::group('/perfumes', function() {
+    /**
+     * @OA\Get(
+     *     path="/perfumes",
+     *     summary="Get all perfumes",
+     *     tags={"perfumes"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of all perfumes"
+     *     )
+     * )
+     */
+    Flight::route('GET /', function() {
+        $perfumes = Flight::parfumeService()->get_all();
+        Flight::json($perfumes);
+    });
+
+    /**
+     * @OA\Post(
+     *     path="/perfumes",
+     *     summary="Create new perfume",
+     *     tags={"perfumes"},
+     *     security={{"bearerAuth": {}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/Perfume")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Perfume created successfully"
+     *     )
+     * )
+     */
+    Flight::route('POST /', function() {
+        Flight::auth_middleware()->authorizeRole(Roles::ADMIN);
+        $data = Flight::request()->data->getData();
+        $result = Flight::parfumeService()->add($data);
+        Flight::json($result);
+    });
+
+    /**
+     * @OA\Put(
+     *     path="/perfumes/@id",
+     *     summary="Update perfume",
+     *     tags={"perfumes"},
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/Perfume")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Perfume updated successfully"
+     *     )
+     * )
+     */
+    Flight::route('PUT /@id', function($id) {
+        Flight::auth_middleware()->authorizeRole(Roles::ADMIN);
+        $data = Flight::request()->data->getData();
+        $result = Flight::parfumeService()->update($id, $data);
+        Flight::json($result);
+    });
+
+    /**
+     * @OA\Delete(
+     *     path="/perfumes/@id",
+     *     summary="Delete perfume",
+     *     tags={"perfumes"},
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Perfume deleted successfully"
+     *     )
+     * )
+     */
+    Flight::route('DELETE /@id', function($id) {
+        Flight::auth_middleware()->authorizeRole(Roles::ADMIN);
+        $result = Flight::parfumeService()->delete($id);
+        Flight::json($result);
+    });
 });

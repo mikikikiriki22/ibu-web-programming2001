@@ -66,4 +66,14 @@ class ReviewService extends BaseService
 
         return $this->dao->delete($id);
     }
+
+    public function getReviewsByFragranceId($fragranceId)
+    {
+        return $this->dao->getReviewsByFragranceId($fragranceId);
+    }
+
+    public function getReviewsByUserId($userId)
+    {
+        return $this->dao->getReviewsByUserId($userId);
+    }
 }

@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . "/../services/UserService.php";
+require_once __DIR__ . '/../../data/roles.php';
 
 
 // making parfume service class accesible
@@ -9,113 +10,111 @@ Flight::register('userService', 'UserService');
 
 //GET ALL USERS
 
-/**
- * @OA\Get(
- *     path="/users",
- *     summary="Get all users",
- *     tags={"Users"},
- *     @OA\Response(response=200, description="List of all users")
- * )
- */
+Flight::group('/users', function() {
+    /**
+     * @OA\Get(
+     *     path="/users",
+     *     summary="Get all users",
+     *     tags={"users"},
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of all users"
+     *     )
+     * )
+     */
+    Flight::route('GET /', function() {
+        Flight::auth_middleware()->authorizeRole(Roles::ADMIN);
+        $users = Flight::userService()->getAllUsers();
+        Flight::json($users);
+    });
 
-Flight::route('GET /users', function () {
-    $data = Flight::userService()->getAllUsers();
-    Flight::json($data);
-});
+    //GET USER BY ID
 
-//GET USER BY ID
+    /**
+     * @OA\Get(
+     *     path="/users/@id",
+     *     summary="Get user by ID",
+     *     tags={"users"},
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="User details"
+     *     )
+     * )
+     */
+    Flight::route('GET /@id', function($id) {
+        $user = Flight::get('user');
+        if ($user->id != $id && $user->role !== Roles::ADMIN) {
+            Flight::halt(403, 'Access denied');
+        }
+        $result = Flight::userService()->getUserById($id);
+        Flight::json($result);
+    });
 
-/**
- * @OA\Get(
- *     path="/users/{id}",
- *     summary="Get user by ID",
- *     tags={"Users"},
- *     @OA\Parameter(
- *         name="id",
- *         in="path",
- *         required=true,
- *         @OA\Schema(type="integer")
- *     ),
- *     @OA\Response(response=200, description="User found"),
- *     @OA\Response(response=404, description="User not found")
- * )
- */
+    //EDITING USER PROFILE
 
-Flight::route('GET /users/@id', function ($id) {
-    $user = Flight::userService()->getUserById($id);
+    /**
+     * @OA\Put(
+     *     path="/users/@id",
+     *     summary="Update user",
+     *     tags={"users"},
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/User")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="User updated successfully"
+     *     )
+     * )
+     */
+    Flight::route('PUT /@id', function($id) {
+        $user = Flight::get('user');
+        if ($user->id != $id && $user->role !== Roles::ADMIN) {
+            Flight::halt(403, 'Access denied');
+        }
+        $data = Flight::request()->data->getData();
+        $result = Flight::userService()->updateUser($id, $data);
+        Flight::json($result);
+    });
 
-    if ($user) {
-        Flight::json($user);
-    } else {
-        Flight::json(["error" => "Fragrance not found"], 404);
-    }
-});
+    //DELETING USER
 
-//EDITING USER PROFILE
-
-/**
- * @OA\Put(
- *     path="/users/{id}",
- *     summary="Update user profile",
- *     tags={"Users"},
- *     @OA\Parameter(
- *         name="id",
- *         in="path",
- *         required=true,
- *         @OA\Schema(type="integer")
- *     ),
- *     @OA\RequestBody(
- *         required=true,
- *         @OA\JsonContent(
- *             @OA\Property(property="username", type="string"),
- *             @OA\Property(property="email", type="string", format="email"),
- *             @OA\Property(property="password", type="string")
- *         )
- *     ),
- *     @OA\Response(response=201, description="User profile updated successfully"),
- *     @OA\Response(response=500, description="Failed to update user profile")
- * )
- */
-
-Flight::route('PUT /users/@id', function ($id) {
-    // get all the data the user sent in the body
-    $data = Flight::request()->data->getData();
-
-    // call the service to update user
-    $userService = new UserService();
-    $result = $userService->updateUser($id, $data);
-
-    // give response based on the result
-    if ($result) {
-        Flight::json(['message' => 'User profile updated successfully'], 201);
-    } else {
-        Flight::json(['message' => 'Failed to update user profile'], 500);
-    }
-});
-
-//DELETING USER
-
-/**
- * @OA\Delete(
- *     path="/users/{id}",
- *     summary="Delete a user",
- *     tags={"Users"},
- *     @OA\Parameter(
- *         name="id",
- *         in="path",
- *         required=true,
- *         @OA\Schema(type="integer")
- *     ),
- *     @OA\Response(response=200, description="User deleted successfully"),
- *     @OA\Response(response=404, description="User not found")
- * )
- */
-
-Flight::route('DELETE /users/@id', function ($id) {
-    try {
-        Flight::userService()->deleteUser($id);
-        Flight::json(['message' => 'User deleted successfully']);
-    } catch (Exception $e) {
-        Flight::json(['error' => $e->getMessage()], 404);
-    }
+    /**
+     * @OA\Delete(
+     *     path="/users/@id",
+     *     summary="Delete user",
+     *     tags={"users"},
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="User deleted successfully"
+     *     )
+     * )
+     */
+    Flight::route('DELETE /@id', function($id) {
+        Flight::auth_middleware()->authorizeRole(Roles::ADMIN);
+        $result = Flight::userService()->deleteUser($id);
+        Flight::json($result);
+    });
 });

@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . "/../services/ReviewService.php";
+require_once __DIR__ . '/../../data/roles.php';
 
 
 // making parfume service class accesible
@@ -18,17 +19,151 @@ Flight::register('reviewService', 'ReviewService');
  * )
  */
 
-Flight::route('GET /reviews', function () {
-    $data = Flight::reviewService()->getAllReviews();
-    Flight::json($data);
+Flight::group('/reviews', function() {
+    Flight::route('GET /', function() {
+        $reviews = Flight::reviewService()->getAllReviews();
+        Flight::json($reviews);
+    });
+
+    //GET REVIEW BY ID
+
+    /**
+     * @OA\Get(
+     *     path="/reviews/{id}",
+     *     summary="Get review by ID",
+     *     tags={"Reviews"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(response=200, description="Review found"),
+     *     @OA\Response(response=404, description="Review not found")
+     * )
+     */
+
+    Flight::route('GET /@id', function($id) {
+        $review = Flight::reviewService()->getReviewById($id);
+
+        if ($review) {
+            Flight::json($review);
+        } else {
+            Flight::json(["error" => "Fragrance not found"], 404);
+        }
+    });
+
+    //ADDING REVIEW
+
+    /**
+     * @OA\Post(
+     *     path="/reviews",
+     *     summary="Add a new review",
+     *     tags={"Reviews"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="fragrance_id", type="integer"),
+     *             @OA\Property(property="rating", type="number", format="float"),
+     *             @OA\Property(property="comment", type="string")
+     *         )
+     *     ),
+     *     @OA\Response(response=201, description="Review added successfully"),
+     *     @OA\Response(response=500, description="Failed to add review")
+     * )
+     */
+
+    Flight::route('POST /', function() {
+        Flight::auth_middleware()->authorizeRoles([Roles::USER, Roles::ADMIN]);
+        $data = Flight::request()->data->getData();
+        $data['user_id'] = Flight::get('user')->id; // Set the user_id from the authenticated user
+        $result = Flight::reviewService()->createReview($data);
+        Flight::json($result);
+    });
+
+    //UPDATING REVIEW
+
+    /**
+     * @OA\Put(
+     *     path="/reviews/{id}",
+     *     summary="Update a review",
+     *     tags={"Reviews"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="rating", type="number", format="float"),
+     *             @OA\Property(property="comment", type="string")
+     *         )
+     *     ),
+     *     @OA\Response(response=201, description="Review updated successfully"),
+     *     @OA\Response(response=500, description="Failed to update review")
+     * )
+     */
+
+    Flight::route('PUT /@id', function($id) {
+        $user = Flight::get('user');
+        $review = Flight::reviewService()->getReviewById($id);
+        
+        // Allow if user is admin or the review author
+        if ($user->role !== Roles::ADMIN && $review['user_id'] != $user->id) {
+            Flight::halt(403, 'Access denied');
+        }
+        
+        $data = Flight::request()->data->getData();
+        $result = Flight::reviewService()->updateReview($id, $data);
+        Flight::json($result);
+    });
+
+    //DELETING REVIEW
+
+    /**
+     * @OA\Delete(
+     *     path="/reviews/{id}",
+     *     summary="Delete a review",
+     *     tags={"Reviews"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(response=200, description="Review deleted successfully"),
+     *     @OA\Response(response=404, description="Review not found")
+     * )
+     */
+
+    Flight::route('DELETE /@id', function($id) {
+        $user = Flight::get('user');
+        $review = Flight::reviewService()->getReviewById($id);
+        
+        // Allow if user is admin or the review author
+        if ($user->role !== Roles::ADMIN && $review['user_id'] != $user->id) {
+            Flight::halt(403, 'Access denied');
+        }
+        
+        $result = Flight::reviewService()->deleteReview($id);
+        Flight::json($result);
+    });
 });
 
-//GET REVIEW BY ID
+// Move this route outside the group
+Flight::route('GET /reviews/user/@id', function($id) {
+    $reviews = Flight::reviewService()->getReviewsByUserId($id);
+    Flight::json($reviews);
+});
+
+//GET REVIEWS BY FRAGRANCE ID
 
 /**
  * @OA\Get(
- *     path="/reviews/{id}",
- *     summary="Get review by ID",
+ *     path="/reviews/fragrance/{id}",
+ *     summary="Get reviews by fragrance ID",
  *     tags={"Reviews"},
  *     @OA\Parameter(
  *         name="id",
@@ -36,121 +171,12 @@ Flight::route('GET /reviews', function () {
  *         required=true,
  *         @OA\Schema(type="integer")
  *     ),
- *     @OA\Response(response=200, description="Review found"),
- *     @OA\Response(response=404, description="Review not found")
+ *     @OA\Response(response=200, description="List of reviews for the specified fragrance"),
+ *     @OA\Response(response=404, description="Fragrance not found")
  * )
  */
 
-Flight::route('GET /reviews/@id', function ($id) {
-    $review = Flight::reviewService()->getReviewById($id);
-
-    if ($review) {
-        Flight::json($review);
-    } else {
-        Flight::json(["error" => "Fragrance not found"], 404);
-    }
-});
-
-//ADDING REVIEW
-
-/**
- * @OA\Post(
- *     path="/reviews",
- *     summary="Add a new review",
- *     tags={"Reviews"},
- *     @OA\RequestBody(
- *         required=true,
- *         @OA\JsonContent(
- *             @OA\Property(property="fragrance_id", type="integer"),
- *             @OA\Property(property="rating", type="number", format="float"),
- *             @OA\Property(property="comment", type="string")
- *         )
- *     ),
- *     @OA\Response(response=201, description="Review added successfully"),
- *     @OA\Response(response=500, description="Failed to add review")
- * )
- */
-
-Flight::route('POST /reviews', function () {
-    // get all the data the user sent in the body
-    $data = Flight::request()->data->getData();
-
-    // call the service to add the review
-    $reviewService = new ReviewService();
-    $result = $reviewService->createReview($data);
-
-    // give response based on the result
-    if ($result) {
-        Flight::json(['message' => 'Review added successfully'], 201);
-    } else {
-        Flight::json(['message' => 'Failed to add review'], 500);
-    }
-});
-
-//UPDATING REVIEW
-
-/**
- * @OA\Put(
- *     path="/reviews/{id}",
- *     summary="Update a review",
- *     tags={"Reviews"},
- *     @OA\Parameter(
- *         name="id",
- *         in="path",
- *         required=true,
- *         @OA\Schema(type="integer")
- *     ),
- *     @OA\RequestBody(
- *         required=true,
- *         @OA\JsonContent(
- *             @OA\Property(property="rating", type="number", format="float"),
- *             @OA\Property(property="comment", type="string")
- *         )
- *     ),
- *     @OA\Response(response=201, description="Review updated successfully"),
- *     @OA\Response(response=500, description="Failed to update review")
- * )
- */
-
-Flight::route('PUT /reviews/@id', function ($id) {
-    // get all the data the user sent in the body
-    $data = Flight::request()->data->getData();
-
-    // call the service to update the review
-    $reviewService = new ReviewService();
-    $result = $reviewService->updateReview($id, $data);
-
-    // give response based on the result
-    if ($result) {
-        Flight::json(['message' => 'Review updated successfully'], 201);
-    } else {
-        Flight::json(['message' => 'Failed to update review'], 500);
-    }
-});
-
-//DELETING REVIEW
-
-/**
- * @OA\Delete(
- *     path="/reviews/{id}",
- *     summary="Delete a review",
- *     tags={"Reviews"},
- *     @OA\Parameter(
- *         name="id",
- *         in="path",
- *         required=true,
- *         @OA\Schema(type="integer")
- *     ),
- *     @OA\Response(response=200, description="Review deleted successfully"),
- *     @OA\Response(response=404, description="Review not found")
- * )
- */
-
-Flight::route('DELETE /reviews/@id', function ($id) {
-    try {
-        Flight::reviewService()->deleteReview($id);
-        Flight::json(['message' => 'Review deleted successfully']);
-    } catch (Exception $e) {
-        Flight::json(['error' => $e->getMessage()], 404);
-    }
+Flight::route('GET /reviews/fragrance/@id', function($id) {
+    $reviews = Flight::reviewService()->getReviewsByFragranceId($id);
+    Flight::json($reviews);
 });

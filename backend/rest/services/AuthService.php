@@ -1,79 +1,119 @@
 <?php
 
 require_once 'BaseService.php';
-require_once __DIR__ . '/../dao/UserDao.php';
+require_once __DIR__ . '/../dao/AuthDao.php';
+require_once __DIR__ . '/../../data/roles.php';
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 
 class AuthService extends BaseService
 {
+    private $auth_dao;
 
     public function __construct()
     {
-        $dao = new UserDao();
-        parent::__construct($dao);
+        $this->auth_dao = new AuthDao();
+        parent::__construct(new AuthDao());
+    }
+
+    public function get_user_by_email($email)
+    {
+        return $this->auth_dao->get_user_by_email($email);
     }
 
     //REGISTRATION
 
-    public function register($userData)
+    public function register($entity)
     {
-
-        //validating required fields:
-
-        if (empty($userData['email']) || empty($userData['username']) || empty($userData['password']) || empty($userData['gender'])) {
-            throw new Exception("All fields are required.");
+        // Validate required fields
+        if (empty($entity['email']) || empty($entity['password']) || empty($entity['username'])) {
+            return ['success' => false, 'error' => 'Email, password and username are required.'];
         }
 
-        //Checking if user already exists:
-
-        $existing = $this->dao->getByEmail($userData['email']);
-
-        if ($existing) {
-            throw new Exception("User with this email already exists.");
+        // Validate email format
+        if (!filter_var($entity['email'], FILTER_VALIDATE_EMAIL)) {
+            return ['success' => false, 'error' => 'Invalid email format.'];
         }
 
-        //hashing pass
+        // Check if email already exists
+        $email_exists = $this->auth_dao->get_user_by_email($entity['email']);
+        if ($email_exists) {
+            return ['success' => false, 'error' => 'Email already registered.'];
+        }
 
-        $userData['password'] = password_hash($userData['password'], PASSWORD_BCRYPT);
+        // Check if username already exists
+        $username_exists = $this->auth_dao->get_user_by_username($entity['username']);
+        if ($username_exists) {
+            return ['success' => false, 'error' => 'Username already taken.'];
+        }
 
-        //adding user into database
+        // Hash password
+        $entity['password'] = password_hash($entity['password'], PASSWORD_BCRYPT);
 
-        $userData = parent::create($userData);
+        // Set default role to user
+        $entity['role'] = Roles::USER;
 
-        //remove password field from $userData before returning it
+        // Add user to database
+        $entity = parent::create($entity);
 
-        unset($userData['password']);
+        // Remove password from response
+        unset($entity['password']);
 
-        //confirmation message
-
-        return ['success' => true, 'data' => $userData];
+        return ['success' => true, 'data' => $entity];
     }
-
 
     //LOGIN
 
-    public function login($credidentials)
+    public function login($entity)
     {
-
-        if (empty($credidentials['email']) || empty($credidentials['password'])) {
-            throw new Exception("All fields are required.");
+        // Validate required fields
+        if (empty($entity['email']) || empty($entity['password'])) {
+            return ['success' => false, 'error' => 'Email and password are required.'];
         }
 
-        //fetching user by email
-
-        $user = $this->dao->getByEmail($credidentials['email']);
-
+        // Get user by email
+        $user = $this->auth_dao->get_user_by_email($entity['email']);
         if (!$user) {
-            throw new Exception("User not found.");
+            return ['success' => false, 'error' => 'Invalid email or password.'];
         }
 
-        //verifying the pass
-
-        if (!$user || !password_verify($credidentials['password'], $user['password'])) {
-            return ['success' => false, 'error' => 'Invalid username or password.'];
+        // Verify password
+        if (!password_verify($entity['password'], $user['password'])) {
+            return ['success' => false, 'error' => 'Invalid email or password.'];
         }
 
+        // Generate JWT token
+        $payload = [
+            'user' => [
+                'id' => $user['id'],
+                'email' => $user['email'],
+                'username' => $user['username'],
+                'role' => $user['role']
+            ],
+            'exp' => time() + (60 * 60 * 24) // 24 hours expiration
+        ];
+
+        $token = JWT::encode($payload, Config::JWT_SECRET(), 'HS256');
+
+        // Remove password from user data
         unset($user['password']);
 
-        return ['success' => true, 'data' => $user];
+        return [
+            'success' => true,
+            'data' => [
+                'token' => $token,
+                'user' => $user
+            ]
+        ];
+    }
+
+    public function verify_token($token)
+    {
+        try {
+            $decoded = JWT::decode($token, new Key(Flight::JWT_SECRET(), 'HS256'));
+            return ['success' => true, 'data' => $decoded];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => 'Invalid token'];
+        }
     }
 }

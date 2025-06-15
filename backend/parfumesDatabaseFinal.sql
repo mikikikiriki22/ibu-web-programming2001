@@ -164,6 +164,8 @@ CREATE TABLE `users` (
   `id` int NOT NULL AUTO_INCREMENT,
   `username` varchar(100) NOT NULL,
   `email` varchar(255) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `role` varchar(20) NOT NULL DEFAULT 'user',
   `about` text,
   `image_url` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
